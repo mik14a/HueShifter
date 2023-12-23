@@ -26,6 +26,7 @@ Make sure that your Unity version is compatible with the package. HueShifter req
 1. The HueShifter window will pop up. This is where you set the colors for your UI elements.
 1. Check the Sync with Theme box and your UI elements will automatically update when you change the theme color.
 1. Adjust the following sliders to fine-tune your colors:
+   - Accent Lightness Factor: Adjust the lightness of the accent.
    - Highlight Brightness: Adjust the brightness when highlighted.
    - Disabled Saturation: Adjust the saturation when disabled.
    - Selected Hue Shift: Adjust the hue shift when selected.
