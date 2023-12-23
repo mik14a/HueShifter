@@ -67,6 +67,7 @@ public class HueShifter : EditorWindow
         }
 
         _uiElementColors.TextColor = EditorGUILayout.ColorField("Text Color", _uiElementColors.TextColor);
+        _uiElementColors.DarkTextColor = EditorGUILayout.ColorField("Dark Text Color", _uiElementColors.DarkTextColor);
 
         _foldoutButtonColor = EditorGUILayout.Foldout(_foldoutButtonColor, "Set the new Button elements");
         if (_foldoutButtonColor) {
@@ -136,7 +137,7 @@ public class HueShifter : EditorWindow
             ChangeColorInSliderElements(_uiElementColors.SliderColor, _uiElementColors.SliderHighlightColor, _uiElementColors.SliderPressedColor, _uiElementColors.SliderDisabledColor, _uiElementColors.SliderFillColor, _uiElementColors.SliderSelectedColor);
             ChangeColorInToggleElements(_uiElementColors.ToggleColor, _uiElementColors.ToggleHighlightColor, _uiElementColors.TogglePressedColor, _uiElementColors.ToggleDisabledColor, _uiElementColors.ToggleSelectedColor);
             ChangeColorInDropdownElements(_uiElementColors.DropdownColor, _uiElementColors.DropdownHighlightColor, _uiElementColors.DropdownPressedColor, _uiElementColors.DropdownDisabledColor, _uiElementColors.DropdownSelectedColor);
-            ChangeColorInInputFieldElements(_uiElementColors.InputFieldColor, _uiElementColors.InputFieldHighlightColor, _uiElementColors.InputFieldPressedColor, _uiElementColors.InputFieldDisabledColor, _uiElementColors.InputFieldSelectedColor);
+            ChangeColorInInputFieldElements(_uiElementColors.InputFieldColor, _uiElementColors.InputFieldHighlightColor, _uiElementColors.InputFieldPressedColor, _uiElementColors.InputFieldDisabledColor, _uiElementColors.InputFieldSelectedColor, _uiElementColors.DarkTextColor);
             ChangeColorInScrollbarElements(_uiElementColors.ScrollbarColor, _uiElementColors.ScrollbarHighlightColor, _uiElementColors.ScrollbarPressedColor, _uiElementColors.ScrollbarDisabledColor, _uiElementColors.ScrollbarImageColor, _uiElementColors.ScrollbarSelectedColor);
             ChangeColorInScrollRectElements(_uiElementColors.ScrollRectColor);
         }
@@ -172,8 +173,10 @@ public class HueShifter : EditorWindow
 
         // Step 2: Compute the text color by inverting the lightness of the base color.
         var (h, s, l) = Rgb2Hsl(_uiElementColors.BaseColor);
-        var textColor = Hsl2Rgb(h, s, l > 0.5f ? 0.2f : 0.8f);
+        var textColor = Hsl2Rgb(h, s, l > 0.5f ? 0.1f : 0.9f);
+        var darkTextColor = Hsl2Rgb(h, s * 0.5f, l > 0.5f ? 0.2f : 0.6f);
         _uiElementColors.TextColor = textColor;
+        _uiElementColors.DarkTextColor = darkTextColor;
 
         // Step 3: Compute the colors for different states of the UI elements based on the theme color.
         (h, s, l) = Rgb2Hsl(_uiElementColors.ThemeColor);
@@ -312,7 +315,7 @@ public class HueShifter : EditorWindow
     /// <param name="pressedColor">The new pressed color.</param>
     /// <param name="disabledColor">The new disabled color.</param>
     /// <param name="selectedColor">The new selected color.</param>
-    static void ChangeColorInInputFieldElements(Color color, Color highlightColor, Color pressedColor, Color disabledColor, Color selectedColor)
+    static void ChangeColorInInputFieldElements(Color color, Color highlightColor, Color pressedColor, Color disabledColor, Color selectedColor, Color placeholderColor)
     {
         foreach (var inputFieldElement in Resources.FindObjectsOfTypeAll(typeof(InputField)).Cast<InputField>()) {
             Undo.RecordObject(inputFieldElement, "Change Input Field Color");
@@ -323,6 +326,12 @@ public class HueShifter : EditorWindow
             colors.disabledColor = disabledColor;
             colors.selectedColor = selectedColor;
             inputFieldElement.colors = colors;
+
+            var placeholder = inputFieldElement.placeholder as Text;
+            if (placeholder != null) {
+                Undo.RecordObject(placeholder, "Change Placeholder Color");
+                placeholder.color = placeholderColor;
+            }
         }
     }
 
@@ -460,6 +469,8 @@ public class HueShifter : EditorWindow
         public float DisabledSaturation;
         public float SelectedHueShift;
         public Color TextColor;
+        public Color DarkTextColor;
+
         public Color ButtonColor;
         public Color ButtonHighlightColor;
         public Color ButtonPressedColor;
