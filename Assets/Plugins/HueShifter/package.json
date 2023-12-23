@@ -5,5 +5,10 @@
     "description": "A Unity editor extension for changing UI colors.",
     "unity": "2019.4",
     "dependencies": { },
-    "license": "MIT"
+    "license": "MIT",
+    "author": {
+        "name": "mik14a",
+        "email": "mik14a@gmail.com",
+        "url": "https://github.com/mik14a/HueShifter"
+    }
 }
