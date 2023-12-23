@@ -34,6 +34,8 @@ public class HueShifter : EditorWindow
             _uiElementColors = JsonUtility.FromJson<UIElementColors>(json);
         } else {
             _uiElementColors = UIElementColors.Default;
+            ApplyBaseColor();
+            ApplyAccentColor();
             ApplyThemeColor();
         }
 
@@ -55,8 +57,20 @@ public class HueShifter : EditorWindow
         _syncWithTheme = EditorGUILayout.Toggle("Sync with Theme", _syncWithTheme);
 
         EditorGUI.BeginChangeCheck();
-        _uiElementColors.ThemeColor = EditorGUILayout.ColorField("Theme Color", _uiElementColors.ThemeColor);
         _uiElementColors.BaseColor = EditorGUILayout.ColorField("Base Color", _uiElementColors.BaseColor);
+        _uiElementColors.AccentLightnessFactor = EditorGUILayout.Slider("Accent Lightness Factor", _uiElementColors.AccentLightnessFactor, 1.0f, 2.0f);
+        if (EditorGUI.EndChangeCheck()) {
+            ApplyBaseColor();
+        }
+
+        EditorGUI.BeginChangeCheck();
+        _uiElementColors.AccentColor = EditorGUILayout.ColorField("Accent Color", _uiElementColors.AccentColor);
+        if (EditorGUI.EndChangeCheck()) {
+            ApplyAccentColor();
+        }
+
+        EditorGUI.BeginChangeCheck();
+        _uiElementColors.ThemeColor = EditorGUILayout.ColorField("Theme Color", _uiElementColors.ThemeColor);
         _uiElementColors.PressedBrightness = EditorGUILayout.Slider("Highlight Brightness", _uiElementColors.PressedBrightness, 0.0f, 1.0f);
         _uiElementColors.DisabledSaturation = EditorGUILayout.Slider("Disabled Saturation", _uiElementColors.DisabledSaturation, 0.0f, 1.0f);
         _uiElementColors.SelectedHueShift = EditorGUILayout.Slider("Selected Hue Shift", _uiElementColors.SelectedHueShift, -0.5f, 0.5f);
@@ -167,19 +181,8 @@ public class HueShifter : EditorWindow
     /// </summary>
     void ApplyThemeColor()
     {
-        // Step 1: Set the base color for all UI elements.
-        _uiElementColors.ButtonColor = _uiElementColors.DropdownColor = _uiElementColors.InputFieldColor = _uiElementColors.ScrollbarColor = _uiElementColors.SliderColor = _uiElementColors.ToggleColor = _uiElementColors.BaseColor;
-        _uiElementColors.SliderFillColor = _uiElementColors.ScrollbarImageColor = _uiElementColors.ScrollRectColor = _uiElementColors.BaseColor;
-
-        // Step 2: Compute the text color by inverting the lightness of the base color.
-        var (h, s, l) = Rgb2Hsl(_uiElementColors.BaseColor);
-        var textColor = Hsl2Rgb(h, s, l > 0.5f ? 0.1f : 0.9f);
-        var darkTextColor = Hsl2Rgb(h, s * 0.5f, l > 0.5f ? 0.2f : 0.6f);
-        _uiElementColors.TextColor = textColor;
-        _uiElementColors.DarkTextColor = darkTextColor;
-
-        // Step 3: Compute the colors for different states of the UI elements based on the theme color.
-        (h, s, l) = Rgb2Hsl(_uiElementColors.ThemeColor);
+        // Calculate the colors of different states of UI elements based on the theme color.
+        var (h, s, l) = Rgb2Hsl(_uiElementColors.ThemeColor);
         var highlightColor = Hsl2Rgb(h, s, l);
         var pressedColor = Hsl2Rgb(h, s, Math.Min(l + _uiElementColors.PressedBrightness, 1.0f));
         var disabledColor = Hsl2Rgb(h, s * _uiElementColors.DisabledSaturation, l);
@@ -188,6 +191,36 @@ public class HueShifter : EditorWindow
         _uiElementColors.ButtonPressedColor = _uiElementColors.SliderPressedColor = _uiElementColors.TogglePressedColor = _uiElementColors.DropdownPressedColor = _uiElementColors.InputFieldPressedColor = _uiElementColors.ScrollbarPressedColor = pressedColor;
         _uiElementColors.ButtonDisabledColor = _uiElementColors.DropdownDisabledColor = _uiElementColors.InputFieldDisabledColor = _uiElementColors.ScrollbarDisabledColor = _uiElementColors.SliderDisabledColor = _uiElementColors.ToggleDisabledColor = disabledColor;
         _uiElementColors.ButtonSelectedColor = _uiElementColors.DropdownSelectedColor = _uiElementColors.InputFieldSelectedColor = _uiElementColors.ScrollbarSelectedColor = _uiElementColors.SliderSelectedColor = _uiElementColors.ToggleSelectedColor = selectedColor;
+    }
+
+    /// <summary>
+    /// Apply the base color to the UI elements.
+    /// </summary>
+    void ApplyBaseColor()
+    {
+        _uiElementColors.ButtonColor = _uiElementColors.DropdownColor = _uiElementColors.InputFieldColor = _uiElementColors.ToggleColor = _uiElementColors.BaseColor;
+        _uiElementColors.SliderFillColor = _uiElementColors.ScrollbarImageColor = _uiElementColors.ScrollRectColor = _uiElementColors.BaseColor;
+
+        // Calculate the accent color and text color based on the hue and lightness of the base color.
+        var (h, s, l) = Rgb2Hsl(_uiElementColors.BaseColor);
+        var textColor = Hsl2Rgb(h, s, l > 0.5f ? 0.1f : 0.9f);
+        var darkTextColor = Hsl2Rgb(h, s * 0.5f, l > 0.5f ? 0.2f : 0.6f);
+        _uiElementColors.TextColor = textColor;
+        _uiElementColors.DarkTextColor = darkTextColor;
+
+        // Calculate the accent color from the base color and apply it to the UI elements.
+        (h, s, l) = Rgb2Hsl(_uiElementColors.BaseColor);
+        var accentColor = Hsl2Rgb(h, Math.Min(s * _uiElementColors.AccentLightnessFactor, 1.0f), Math.Min(l * _uiElementColors.AccentLightnessFactor, 1.0f));
+        _uiElementColors.AccentColor = accentColor;
+        ApplyAccentColor();
+    }
+
+    /// <summary>
+    /// Apply the accent color to the UI elements.
+    /// </summary>
+    void ApplyAccentColor()
+    {
+        _uiElementColors.SliderColor = _uiElementColors.ScrollbarColor = _uiElementColors.AccentColor;
     }
 
     /// <summary>
@@ -456,20 +489,25 @@ public class HueShifter : EditorWindow
     public class UIElementColors
     {
         public static UIElementColors Default => new() {
-            ThemeColor = new Color(255 / 255f, 96 / 255f, 192 / 255f, 1),
             BaseColor = new Color(64 / 255f, 64 / 255f, 64 / 255f, 1),
+            AccentLightnessFactor = 1.5f,
+            ThemeColor = new Color(255 / 255f, 96 / 255f, 192 / 255f, 1),
             PressedBrightness = 0.2f,
             DisabledSaturation = 0.3f,
             SelectedHueShift = 0.5f
         };
 
-        public Color ThemeColor;
         public Color BaseColor;
+        public Color TextColor;
+        public Color DarkTextColor;
+
+        public Color AccentColor;
+        public float AccentLightnessFactor;
+
+        public Color ThemeColor;
         public float PressedBrightness;
         public float DisabledSaturation;
         public float SelectedHueShift;
-        public Color TextColor;
-        public Color DarkTextColor;
 
         public Color ButtonColor;
         public Color ButtonHighlightColor;
