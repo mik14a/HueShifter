@@ -1,0 +1,17 @@
+{
+    "dotnet.preferCSharpExtension": true,
+    "files.exclude": {
+        "[Bb]uild/": true,
+        "[Bb]uilds/": true,
+        "[Ll]ibrary/": true,
+        "[Ll]ogs/": true,
+        "[Oo]bj/": true,
+        "[Tt]emp/": true,
+        "[Uu]ser[Ss]ettings/": true,
+        "*.csproj": true,
+        "*.sln": true
+    },
+    "cSpell.words": [
+        "Mathf"
+    ]
+}
